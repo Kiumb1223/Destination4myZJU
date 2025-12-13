@@ -56,7 +56,11 @@
         \commonhead{}
         \fancyfoot{}
         \ifthenelse{\equal{\TwoSide}{true}}{
-            \fancyfoot[OR,EL]{\zihao{-5} \songti \thepage}
+            % \fancyfoot[OR,EL]{\zihao{-5} \songti \thepage}
+            % O 代表 偶数页 E 代表 奇数页
+            % R right L left 
+            \fancyfoot[C]{\zihao{-5} \songti \thepage}            
+                    
         }{
             \fancyfoot[C]{\zihao{-5} \songti \thepage}            
         }
@@ -66,7 +70,8 @@
         \fancyhead{}
         \fancyfoot{}
         \ifthenelse{\equal{\TwoSide}{true}}{
-            \fancyfoot[OR,EL]{\zihao{-5} \songti \thepage}
+            % \fancyfoot[OR,EL]{\zihao{-5} \songti \thepage}
+            \fancyfoot[C]{\zihao{-5} \songti \thepage}            
         }{
             \fancyfoot[C]{\zihao{-5} \songti \thepage}            
         }
