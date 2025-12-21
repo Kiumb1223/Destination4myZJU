@@ -4,16 +4,87 @@
 
     \appendixsecmajornumbering
 
-    \section{一个附录}
+    \section{\label{sec:track_management}DGCTracker 轨迹状态管理策略伪代码}
+ 
+    \algrenewcommand\algorithmicrequire{\textbf{输入:}}
+    \algrenewcommand\algorithmicensure{\textbf{输出:}}
 
-    \begin{figure}[htb]
-        \centering
-        \includegraphics{example-image}
-        \caption{附录中的图片}
-        \label{fig:test-appendix}
-    \end{figure}
+    本附录详细列出了 DGCTracker 轨迹状态管理策略的伪代码实现，用于补充正文第\ref{sec:ch3_3}节中对三阶段轨迹更新策略的流程性描述，便于方法复现与工程实现。
+    % ===================== 第一段：到阶段二结束 =====================
+    \begin{algorithm}[H]
+    \caption{DGCTracker三阶段轨迹管理伪代码}
+    \label{alg:track_management}
+    \begin{algorithmic}[1]
+    \Require 当前帧检测集合 $\mathcal{D}^t$；上一帧轨迹集合 $\mathcal{L}^{t-1}$；检测置信度阈值 $\tau$
+    \Ensure 更新后的轨迹集合 $\mathcal{L}^t$
 
-    \section{另一个附录}
+    \State \texttt{/* \textbf{数据预处理} */}
+    \State $D_{\text{high}}, D_{\text{low}} \gets \emptyset, \emptyset$; 
+        $L_{\text{born}}, L_{\text{active}}, L_{\text{sleep}} \gets \emptyset, \emptyset, \emptyset$
+    \ForAll{$d \in \mathcal{D}^t$}
+        \If{$d.\text{score} > \tau$}
+            \State $D_{\text{high}} \gets D_{\text{high}} \cup \{d\}$
+        \Else
+            \State $D_{\text{low}} \gets D_{\text{low}} \cup \{d\}$
+        \EndIf
+    \EndFor
+    \ForAll{$l \in \mathcal{L}^{t-1}$}
+        \If{$l.\text{state} = \mathbf{BORN}$}
+            \State $L_{\text{born}} \gets L_{\text{born}} \cup \{l\}$
+        \ElsIf{$l.\text{state} = \mathbf{ACTIVE}$}
+            \State $L_{\text{active}} \gets L_{\text{active}} \cup \{l\}$
+        \ElsIf{$l.\text{state} = \mathbf{SLEEP}$}
+            \State $L_{\text{sleep}} \gets L_{\text{sleep}} \cup \{l\}$
+        \EndIf
+    \EndFor
+
+    % ======== 在这里存储行号状态（阶段三前分页）========
+    \algstore{DGCTrack}
+    \end{algorithmic}
+    \end{algorithm}
+
+
+    % ===================== 第二段：从阶段三开始（续） =====================
+    \begin{algorithm}[H]
+    \ContinuedFloat
+    \caption{DGCTracker三阶段轨迹管理伪代码（续）}
+    \begin{algorithmic}[1]
+    % ======== 恢复行号，使编号连续 ========
+    \algrestore{DGCTrack}
+
+    \State \texttt{/* \textbf{阶段一：基于图关联的主匹配阶段} */}
+    \State $S \gets \mathrm{DGC}(L_{\text{active}}, D_{\text{high}})$
+    \State $match_1, unmatch_1 \gets \mathrm{Hungarian}(S)$
+    \State $L_{\text{remain}}, D_{\text{remain}} \gets unmatch_1$
+
+    \State ~
+    \State \texttt{/* \textbf{阶段二：多模态联合匹配阶段} */}
+    \State $L_2 \gets L_{\text{sleep}} \cup L_{\text{remain}}$
+    \ForAll{$d_i \in D_{\text{low}}$}
+        \ForAll{$l_j \in L_2$}
+            \State $C_{i,j} \gets (1-\lambda)\,C_{\text{app}}(d_i,l_j) 
+            + \lambda\,C_{\text{HIoU}}(d_i,l_j)$
+        \EndFor
+    \EndFor
+    \State $match_2, unmatch_2 \gets \mathrm{Hungarian}(C)$
+
+    \State ~
+    \State \texttt{/* \textbf{阶段三：基于 IoU 的新生轨迹验证阶段} */}
+    \ForAll{$d_i \in D_{\text{remain}}$}
+        \ForAll{$l_j \in L_{\text{born}}$}
+            \State $C_{i,j} \gets C_{\text{IoU}}(d_i,l_j)$
+        \EndFor
+    \EndFor
+    \State $match_3, unmatch_3 \gets \mathrm{Hungarian}(C_3)$
+
+    \State ~
+    \State \texttt{/* \textbf{状态维护与轨迹更新} */}
+    \State $match \gets match_1 \cup match_2 \cup match_3$
+    \State $unmatch \gets unmatch_2 \cup unmatch_3$
+    \State $\mathcal{L}^{t} \gets 
+    \mathrm{updateState}(\mathcal{L}^{t-1}, \mathcal{D}^t, match, unmatch)$
+    \end{algorithmic}
+    \end{algorithm}
 
     % End of appendix
     \removeappendixsecmajornumbering

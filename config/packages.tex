@@ -31,8 +31,14 @@
 \usepackage{calc}
 \usepackage{longtable}
 \usepackage{booktabs}
-\usepackage[chapter]{algorithm}
-\usepackage{algorithmic}
+%  2025-12-20
+%  为了使得算法分页编号连续  更新一些包导入
+%  卢焱龙
+% \usepackage[chapter]{algorithm}
+% \usepackage{algorithmic} 
+\usepackage[chapter]{algorithm}    % 浮动体和编号
+\usepackage{algpseudocode}         % algorithmicx 的伪代码语法（含 \Statex / \algstore 等）
+
 \usepackage{amsmath, amsthm}
 \usepackage{bm}
 \usepackage{subcaption} 
