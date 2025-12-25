@@ -74,7 +74,7 @@
 \textbf{1. 稀疏图构建}：针对输入的历史轨迹集合$\mathcal{L}^{t-1}$与当前检测集合$\mathcal{D}^{t}$，分别独立构建轨迹图$G^l$与检测图$G^d$。
 为了避免全连接带来的计算冗余，本文采用 K-近邻（KNN）算法基于空间欧氏距离自适应生成稀疏拓扑结构；同时，融合目标的外观纹理与几何坐标信息，对图中的节点与边特征进行初始化编码，为后续的消息传递奠定基础。
 
-\textbf{2. 图特征提取}：这是整个框架的核心组成部分。对构建的轨迹图与检测图，并行执行静态图卷积（Static GCN）和动态图卷积（Dynamic GCN）进行特征提取。Static GCN在固定的空间邻域中聚合信息，捕捉目标间稳定的局部几何结构；
+\textbf{2. 双图特征提取与融合}：这是整个框架的核心组成部分。对构建的轨迹图与检测图，并行执行静态图卷积（Static GCN）和动态图卷积（Dynamic GCN）进行特征提取。Static GCN在固定的空间邻域中聚合信息，捕捉目标间稳定的局部几何结构；
 Dynamic GCN则基于节点嵌入间的相对差异来动态重构图的连接关系，以显式建模目标间的判别性差异与潜在的长程依赖。最后，通过层次化融合模块，生成多层次上下文信息的判别性节点嵌入。
 
 \textbf{3. 跨帧关联匹配}：基于提取的高维节点嵌入，结合几何重叠度（IOU）先验，计算轨迹与检测之间的亲和度矩阵。最后，通过Sinkhorn\cite{sinkhorn}算法对矩阵进行双随机归一化处理，并利用匈牙利算法\cite{hungarian}完成最终的目标匹配。
@@ -543,14 +543,14 @@ L_{\text{sleep}}  = \{\, l \in \mathcal{L}^{t-1} \mid l.\text{state}  = \mathbf{
     \item \textbf{未匹配的轨迹}：Active轨迹转为Sleep状态；Sleep轨迹的丢失帧数加1，若超过最大保留时长$T_{\text{max}}$（默认30帧），则转为Dead状态；Born轨迹直接转为Dead状态，视为噪声滤除。
 \end{itemize}
 
-最终，系统输出更新后的轨迹集合$L^t$，完成当前帧的跟踪。该三阶段级联策略通过精细化、分优先级的资源分配，在确保高精度关联的基础上，显著提升了系统对复杂场景的适应性与轨迹的长期一致性。
+最终，系统输出更新后的轨迹集合$\mathcal{L}^t$，完成当前帧的跟踪。该三阶段级联策略通过精细化、分优先级的资源分配，在确保高精度关联的基础上，显著提升了系统对复杂场景的适应性与轨迹的长期一致性。
 
 \section{实验结果与讨论}
 \label{sec:ch3_4}
 为了全面验证本章提出的基于图神经网络的轨迹关联方法（DGCTracker）的有效性，我们在公开多目标跟踪基准数据集上进行了广泛的实验验证与分析。
 本节内容安排如下：
 首先，\ref{subsec:ch3_4_1} 节详细阐述了实验的基础设置，包括数据集的本地划分策略、采用的各项评价指标体系以及模型训练的实现细节；
-其次，\ref{subsec:ch3_4_2} 节将本方法与当前主流的先进算法（State-of-the-Arts）进行对比，从客观指标和主观可视化两个维度评估算法的综合性能；
+其次，\ref{subsec:ch3_4_2} 节将本方法与当前主流的先进算法进行对比，从客观指标和主观可视化两个维度评估算法的综合性能；
 最后，\ref{subsec:ch3_4_3} 节通过一系列消融实验，深入剖析了稀疏图构建参数、双图神经网络架构以及数据增强策略对模型最终跟踪精度的具体影响与贡献。
 \subsection{实验条件设置}
 \label{subsec:ch3_4_1}
@@ -570,7 +570,7 @@ L_{\text{sleep}}  = \{\, l \in \mathcal{L}^{t-1} \mid l.\text{state}  = \mathbf{
 
 \textbf{2. 实现细节与训练设置}
 
-DGCTracker 的实现基于 PyTorch 与 PyTorch-Geometric 框架完成，并在一块 NVIDIA RTX 4090 GPU 上进行训练。
+DGCTracker 的实现基于 PyTorch 与 PyTorch-Geometric 框架完成，并在一张 NVIDIA RTX 4090 GPU 上进行训练。
 在外观特征提取上，DGCTracker沿用了SUSHI\cite{sushi}的设计策略，采用在ImageNet上预训练的ResNet50-IBN\cite{fastreid}作为 ReID 骨干网络。为了防止过拟合并提高训练效率，在训练过程中骨干网络权值保持冻结，仅对末端添加的线性降维层进行微调。
 图构建阶段中的邻居数设置为$K=2$。图神经网络模块由3层静态图卷积与2层动态图卷积组成。
 
@@ -796,7 +796,7 @@ KNN算法中的邻居数 $K$ 直接决定了图的稀疏程度与计算复杂度
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=16cm]{chapter3/16.png}
-    \caption{\label{fig:ch_3_16}14个节点的图结构随$K$值增加的演变示意图}
+    \caption{\label{fig:ch_3_16}14个节点的图结构随$K$值增加而演变的示意图}
 \end{figure}
 
 表 \ref{tab:ch_3_4_3_4} 的实验结果表明，当 $K=2$ 时模型取得了最佳的综合性能（HOTA=61.65）。
@@ -866,7 +866,7 @@ $K=2$ 的设置能够在“捕捉必要的局部空间上下文”（如遮挡�
 接下来，我们对静态图与动态图卷积中的邻居聚合算子进行了消融，将默认的最大池化（max pooling）替换为均值聚合（mean pooling），其对应更新形式如下所示：
 \begin{equation}
 \begin{dcases}
-    ^{s}h_i^{\beta} = {^{s}g^\beta}\left(  \frac{1}{N}\sum_{j \in \mathcal{N}(i)} {^{s}f_2}^\beta\left( ^{s}z_{ji} ~, \left( ^{s}h_j^{\beta-1} - {^{s}h_i^{\beta-1}} \right) \right) \right) \\
+    ^{s}h_i^{\beta} = {^{s}g^\beta}\left(  ^{s}f_1^\beta\left( ^{s}h_i^{\beta-1} \right) + \frac{1}{N}\sum_{j \in \mathcal{N}(i)} {^{s}f_2}^\beta\left( ^{s}z_{ji} ~, \left( ^{s}h_j^{\beta-1} - {^{s}h_i^{\beta-1}} \right) \right) \right) \\
     ^{d}h_i^{\beta} = \frac{1}{N}\sum_{j \in \mathcal{N}^{\beta}(i)} {^{d}f^\beta}\left( \left[^{d}h_{i}^{\beta -1} ~\cdot~\left( ^{d}h_j^{\beta-1} - {^{d}h_i^{\beta-1}} \right) \right] \right)
 \end{dcases}
 \end{equation}
